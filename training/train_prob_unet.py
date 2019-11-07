@@ -15,6 +15,9 @@
 """Probabilistic U-Net training script."""
 
 import tensorflow as tf
+#print ("tf.__version__", tf.__version__)
+
+
 import numpy as np
 import os
 import time
@@ -27,7 +30,6 @@ from importlib.machinery import SourceFileLoader
 from fme.data_provider import get_data_provider
 from model.probabilistic_unet import ProbUNet
 import utils.training_utils as training_utils
-
 
 def train(cf):
 	"""Perform training from scratch."""
@@ -184,12 +186,13 @@ def train(cf):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Training of the Probabilistic U-Net')
-	parser.add_argument('-c', '--config', type=str, default='prob_unet_config.py',
+	parser.add_argument('-c', '--config', type=str, default="",
 						help='name of the python script defining the training configuration')
-	parser.add_argument('-d', '--data_dir', type=str, default='',
-						help="full path to the data, if empty the config's data_dir attribute is used")
 	args = parser.parse_args()
 
+	if not os.path.exists(args.config):
+		print("Config file not provided or does not exists: %s" % args.config)
+		exit(1)
 	# load config
 	cf = SourceFileLoader('cf', args.config).load_module()
 	if args.data_dir != '':
