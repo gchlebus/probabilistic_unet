@@ -147,6 +147,7 @@ def train(cf):
         running_mean_val_rec_loss = 0.
         running_mean_val_kl = 0.
 
+        #FIXME predict batch_size patches at a time, not all at once. 
         for j in range(cf.validation['n_batches']):
           val_rec, val_sample, val_rec_loss, val_kl = \
             sess.run([reconstructed_logits, sampled_logits, rec_loss, kl],
