@@ -7,12 +7,12 @@ __author__ = 'gchlebus'
 def get_data_provider(cf):
   interface = cf.data_server
   port = cf.data_port
-  print("Connecting to remote data server on %s:%d..." % (cf.interface, port))
+  print("Connecting to remote data server on %s:%d..." % (interface, port))
   from dnn.remote.client import connect_socket
   client = connect_socket(interface, port)
 
   print("Initialising data streams...")
-  if not client.initiialize_streams():
+  if not client.initialize_streams():
     raise RuntimeError("Initializing streams failed")
 
   training_case_count = client.training_case_count()

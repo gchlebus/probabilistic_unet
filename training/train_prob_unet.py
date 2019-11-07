@@ -195,8 +195,7 @@ if __name__ == "__main__":
 		exit(1)
 	# load config
 	cf = SourceFileLoader('cf', args.config).load_module()
-	if args.data_dir != '':
-		cf.data_dir = args.data_dir
+
 
 	# prepare experiment directory
 	if not os.path.isdir(cf.exp_dir):
