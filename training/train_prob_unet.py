@@ -43,9 +43,10 @@ def train(cf):
 
 	val_streams = data_provider.get_validation_batch(cf.batch_size * cf.n_val_batches)
 	val_streams = dict(zip(stream_names, val_streams))
+  val_streams = {k: np.asarray(v) for k, v in val_streams.items()}
 
 
-	prob_unet = ProbUNet(latent_dim=cf.latent_dim, num_channels=cf.num_channels,
+  prob_unet = ProbUNet(latent_dim=cf.latent_dim, num_channels=cf.num_channels,
 						 num_1x1_convs=cf.num_1x1_convs,
 						 num_classes=cf.num_classes, num_convs_per_block=cf.num_convs_per_block,
 						 initializers={'w': training_utils.he_normal(),
@@ -117,6 +118,8 @@ def train(cf):
 			with data_provider.preschedule_repeated_call():
 				streams = data_provider.get_training_batch(cf.batch_size)
 				streams = dict(zip(stream_names, streams))
+        streams = {k: np.asarray(v) for k, v in streams.items()}
+
 
 			_, train_summary = sess.run([optimizer, training_summary_op],
 										feed_dict={
