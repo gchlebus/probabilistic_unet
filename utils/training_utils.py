@@ -199,8 +199,6 @@ def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None
 
     f = plt.figure(figsize=(batch_size * 4, num_y_tiles * 2))
     gs = gridspec.GridSpec(num_y_tiles, batch_size, wspace=0.0, hspace=0.0)
-    print("num_y_tiles", num_y_tiles)
-    print("batch_size", batch_size)
 
     # suppress matplotlib range warnings
     if clip_range:
