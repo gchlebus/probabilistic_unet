@@ -24,7 +24,7 @@ import logging
 import argparse
 from importlib.machinery import SourceFileLoader
 
-from data.cityscapes.data_loader import get_train_generators
+from fme.data_provider import get_data_provider
 from model.probabilistic_unet import ProbUNet
 import utils.training_utils as training_utils
 
@@ -36,9 +36,12 @@ def train(cf):
 	os.environ["CUDA_VISIBLE_DEVICES"] = cf.cuda_visible_devices
 
 	# initialize data providers
-	data_provider = get_train_generators(cf)
-	train_provider = data_provider['train']
-	val_provider = data_provider['val']
+	data_provider = get_data_provider(cf)
+	stream_names = data_provider.stream_names()
+
+	val_streams = data_provider.get_validation_batch(cf.batch_size * cf.n_val_batches)
+	val_streams = dict(zip(stream_names, val_streams))
+
 
 	prob_unet = ProbUNet(latent_dim=cf.latent_dim, num_channels=cf.num_channels,
 						 num_1x1_convs=cf.num_1x1_convs,
@@ -49,7 +52,9 @@ def train(cf):
 
 	x = tf.placeholder(tf.float32, shape=cf.network_input_shape)
 	y = tf.placeholder(tf.uint8, shape=cf.label_shape)
-	mask = tf.placeholder(tf.uint8, shape=cf.loss_mask_shape)
+
+	mask = None # do not use mask
+	#mask = tf.placeholder(tf.uint8, shape=cf.loss_mask_shape)
 
 	global_step = tf.train.get_or_create_global_step()
 
@@ -106,10 +111,17 @@ def train(cf):
 		for i in tqdm(range(cf.n_training_batches), disable=cf.disable_progress_bar):
 
 			start_time = time.time()
-			train_batch = next(train_provider)
+
+			with data_provider.preschedue_repeated_call():
+				streams = data_provider.get_training_batch(cf.batch_size)
+				streams = dict(zip(stream_names, streams))
+
 			_, train_summary = sess.run([optimizer, training_summary_op],
-										feed_dict={x: train_batch['data'], y: train_batch['seg'],
-												   mask: train_batch['loss_mask']})
+										feed_dict={
+											x: streams[cf.input_stream_name],
+											y: streams[cf.labels_stream_name],
+										  #mask: streams['loss_mask']
+										})
 			summary_writer.add_summary(train_summary, i)
 			time_delta = time.time() - start_time
 			train_speed = sess.run(timing_summary, feed_dict={batches_per_second: 1. / time_delta})
@@ -118,36 +130,45 @@ def train(cf):
 			# validation
 			if i % cf.validation['every_n_batches'] == 0:
 
-				train_rec = sess.run(reconstructed_logits, feed_dict={x: train_batch['data'], y: train_batch['seg']})
+				train_rec = sess.run(reconstructed_logits, feed_dict={
+											x: streams[cf.input_stream_name],
+											y: streams[cf.labels_stream_name]
+				})
 				image_path = os.path.join(cf.exp_dir,
 										  'batch_{}_train_reconstructions.png'.format(i // cf.validation['every_n_batches']))
-				training_utils.plot_batch(train_batch, train_rec, num_classes=cf.num_classes,
+				training_utils.plot_batch(streams, train_rec, num_classes=cf.num_classes,
 										  cmap=cf.color_map, out_dir=image_path)
 
 				running_mean_val_rec_loss = 0.
 				running_mean_val_kl = 0.
 
 				for j in range(cf.validation['n_batches']):
-					val_batch = next(val_provider)
 					val_rec, val_sample, val_rec_loss, val_kl =\
 						sess.run([reconstructed_logits, sampled_logits, rec_loss, kl],
-								  feed_dict={x: val_batch['data'], y: val_batch['seg'], mask: val_batch['loss_mask']})
+								  feed_dict=
+									{x: val_streams[cf.input_stream_name],
+									 y: val_streams[cf.labels_stream_name],
+									 #mask: val_batch['loss_mask']
+									 })
 					running_mean_val_rec_loss += val_rec_loss / cf.validation['n_batches']
 					running_mean_val_kl += val_kl / cf.validation['n_batches']
 
 					if j == 0:
 						image_path = os.path.join(cf.exp_dir,
 												  'batch_{}_val_reconstructions.png'.format(i // cf.validation['every_n_batches']))
-						training_utils.plot_batch(val_batch, val_rec,  num_classes=cf.num_classes,
+						training_utils.plot_batch(val_streams, val_rec,  num_classes=cf.num_classes,
 												  cmap=cf.color_map, out_dir=image_path)
 						image_path = os.path.join(cf.exp_dir,
 												  'batch_{}_val_samples.png'.format(i // cf.validation['every_n_batches']))
 
 						for _ in range(3):
-							val_sample_ = sess.run(sampled_logits, feed_dict={x: val_batch['data'], y: val_batch['seg']})
+							val_sample_ = sess.run(sampled_logits, feed_dict={
+								x: val_streams[cf.input_stream_name],
+								y: val_streams[cf.labels_stream_name]
+							})
 							val_sample = np.concatenate([val_sample, val_sample_], axis=1)
 
-						training_utils.plot_batch(val_batch, val_sample, num_classes=cf.num_classes,
+						training_utils.plot_batch(val_streams, val_sample, num_classes=cf.num_classes,
 												  cmap=cf.color_map, out_dir=image_path)
 
 				val_summary = sess.run(validation_summary_op, feed_dict={mean_val_rec_loss: running_mean_val_rec_loss,

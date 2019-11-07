@@ -190,8 +190,8 @@ def plot_batch(batch, prediction, cmap, num_classes, out_dir=None, clip_range=Tr
     :param out_dir: full path to save png image to
     :return:
     """
-    img_arr = batch['data']
-    seg_arr = batch['seg']
+    img_arr = batch['image']
+    seg_arr = batch['liver_mask']
 
     num_predictions = prediction.shape[1] // num_classes
     num_y_tiles = 2 + num_predictions
