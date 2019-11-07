@@ -35,7 +35,7 @@ def train(cf):
 	"""Perform training from scratch."""
 
 	# do not use all gpus
-	os.environ["CUDA_VISIBLE_DEVICES"] = cf.cuda_visible_devices
+	#os.environ["CUDA_VISIBLE_DEVICES"] = cf.cuda_visible_devices
 
 	# initialize data providers
 	data_provider = get_data_provider(cf)
@@ -65,20 +65,20 @@ def train(cf):
 	else:
 		learning_rate = tf.train.exponential_decay(learning_rate=cf.initial_learning_rate, global_step=global_step,
 											       **cf.learning_rate_kwargs)
-	with tf.device(cf.gpu_device):
-		prob_unet(x, y, is_training=True, one_hot_labels=cf.one_hot_labels)
-		elbo = prob_unet.elbo(y, reconstruct_posterior_mean=cf.use_posterior_mean, beta=cf.beta, loss_mask=mask,
-							  analytic_kl=cf.analytic_kl, one_hot_labels=cf.one_hot_labels)
-		reconstructed_logits = prob_unet._rec_logits
-		sampled_logits = prob_unet.sample()
+	#with tf.device(cf.gpu_device):
+	prob_unet(x, y, is_training=True, one_hot_labels=cf.one_hot_labels)
+	elbo = prob_unet.elbo(y, reconstruct_posterior_mean=cf.use_posterior_mean, beta=cf.beta, loss_mask=mask,
+							analytic_kl=cf.analytic_kl, one_hot_labels=cf.one_hot_labels)
+	reconstructed_logits = prob_unet._rec_logits
+	sampled_logits = prob_unet.sample()
 
-		reg_loss = cf.regularizarion_weight * tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
-		loss = -elbo + reg_loss
-		rec_loss = prob_unet._rec_loss_mean
-		kl = prob_unet._kl
+	reg_loss = cf.regularizarion_weight * tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+	loss = -elbo + reg_loss
+	rec_loss = prob_unet._rec_loss_mean
+	kl = prob_unet._kl
 
-		mean_val_rec_loss = tf.placeholder(tf.float32, shape=(), name="mean_val_rec_loss")
-		mean_val_kl = tf.placeholder(tf.float32, shape=(), name="mean_val_kl")
+	mean_val_rec_loss = tf.placeholder(tf.float32, shape=(), name="mean_val_rec_loss")
+	mean_val_kl = tf.placeholder(tf.float32, shape=(), name="mean_val_kl")
 
 	optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
 
@@ -114,7 +114,7 @@ def train(cf):
 
 			start_time = time.time()
 
-			with data_provider.preschedue_repeated_call():
+			with data_provider.preschedule_repeated_call():
 				streams = data_provider.get_training_batch(cf.batch_size)
 				streams = dict(zip(stream_names, streams))
 
