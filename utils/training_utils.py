@@ -210,7 +210,7 @@ def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None
         ax = plt.subplot(gs[0, tile])
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        plt.imshow(np.transpose(img_arr[tile], axes=[1,2,0]))
+        plt.imshow(np.transpose(img_arr[tile, 0], axes=[0,1]))
 
         # (here sampled) gt segmentation
         ax = plt.subplot(gs[1, tile])
