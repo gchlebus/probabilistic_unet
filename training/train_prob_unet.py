@@ -138,8 +138,9 @@ def train(cf):
 				})
 				image_path = os.path.join(cf.exp_dir,
 										  'batch_{}_train_reconstructions.png'.format(i // cf.validation['every_n_batches']))
-				training_utils.plot_batch(streams, train_rec, num_classes=cf.num_classes,
-										  cmap=cf.color_map, out_dir=image_path)
+				training_utils.plot_batch(
+					streams[cf.input_stream_name], streams[cf.labels_stream_name],
+				train_rec, num_classes=cf.num_classes, cmap=cf.color_map, out_dir=image_path)
 
 				running_mean_val_rec_loss = 0.
 				running_mean_val_kl = 0.
@@ -158,8 +159,9 @@ def train(cf):
 					if j == 0:
 						image_path = os.path.join(cf.exp_dir,
 												  'batch_{}_val_reconstructions.png'.format(i // cf.validation['every_n_batches']))
-						training_utils.plot_batch(val_streams, val_rec,  num_classes=cf.num_classes,
-												  cmap=cf.color_map, out_dir=image_path)
+						training_utils.plot_batch(
+							val_streams[cf.input_stream_name], val_streams[cf.labels_stream_name],
+							val_rec, num_classes=cf.num_classes, cmap=cf.color_map, out_dir=image_path)
 						image_path = os.path.join(cf.exp_dir,
 												  'batch_{}_val_samples.png'.format(i // cf.validation['every_n_batches']))
 
@@ -170,8 +172,10 @@ def train(cf):
 							})
 							val_sample = np.concatenate([val_sample, val_sample_], axis=1)
 
-						training_utils.plot_batch(val_streams, val_sample, num_classes=cf.num_classes,
-												  cmap=cf.color_map, out_dir=image_path)
+						training_utils.plot_batch(
+							val_streams[cf.input_stream_name], val_streams[cf.labels_stream_name],
+							val_sample, num_classes=cf.num_classes, cmap=cf.color_map,
+							out_dir=image_path)
 
 				val_summary = sess.run(validation_summary_op, feed_dict={mean_val_rec_loss: running_mean_val_rec_loss,
 																		 mean_val_kl: running_mean_val_kl})

@@ -181,7 +181,7 @@ def he_normal(seed=None):
     return VarianceScaling(scale=2., mode='fan_in', distribution='normal', seed=seed)
 
 
-def plot_batch(batch, prediction, cmap, num_classes, out_dir=None, clip_range=True):
+def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None, clip_range=True):
     """
     Plots a batch of images, segmentations & samples and optionally saves it to disk.
     :param batch: dict holding images and gt labels for a batch
@@ -190,8 +190,8 @@ def plot_batch(batch, prediction, cmap, num_classes, out_dir=None, clip_range=Tr
     :param out_dir: full path to save png image to
     :return:
     """
-    img_arr = batch['image']
-    seg_arr = batch['liver_mask']
+    img_arr = img_batch
+    seg_arr = ref_batch
 
     num_predictions = prediction.shape[1] // num_classes
     num_y_tiles = 2 + num_predictions
