@@ -91,8 +91,10 @@ def train(cf):
   reg_loss_summary = tf.summary.scalar('train_reg_loss', reg_loss)
   lr_summary = tf.summary.scalar('learning_rate', learning_rate)
   beta_summary = tf.summary.scalar('beta', cf.beta)
-  training_summary_op = tf.summary.merge([train_loss_summary, reg_loss_summary, lr_summary, train_elbo_summary,
-                                          train_kl_summary, train_rec_loss_summary, beta_summary])
+  #training_summary_op = tf.summary.merge([train_loss_summary, reg_loss_summary, lr_summary, train_elbo_summary,
+  #                                        train_kl_summary, train_rec_loss_summary, beta_summary])
+  training_summary_op = tf.summary.merge_all()
+
   batches_per_second = tf.placeholder(tf.float32, shape=(), name="batches_per_sec_placeholder")
   timing_summary = tf.summary.scalar('batches_per_sec', batches_per_second)
   val_rec_loss_summary = tf.summary.scalar('val_loss', mean_val_rec_loss)
