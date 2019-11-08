@@ -337,6 +337,9 @@ class AxisAlignedConvGaussian(snt.AbstractModule):
         mu = mu_log_sigma[:, :self._latent_dim]
         log_sigma = mu_log_sigma[:, self._latent_dim:]
 
+        tf.summary.histogram(self._original_name + "/mu", mu)
+        tf.summary.histogram(self._original_name + "/stddev", tf.exp(log_sigma))
+
         return tfd.MultivariateNormalDiag(loc=mu, scale_diag=tf.exp(log_sigma))
 
 
