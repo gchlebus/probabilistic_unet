@@ -41,6 +41,23 @@ class InferenceServer(object):
     self._y = tf.placeholder(tf.uint8, shape=cf.label_shape)
     # is_training=True to get posterior_net as well
     self._punet(self._x, self._y, is_training=True, one_hot_labels=cf.one_hot_labels)
+
+    # posterior-based inference
+    self._posterior_latent_mu_op = self._punet._q.mean()
+    self._posterior_latent_stddev_op = self._punet._q.stddev()
+    self._posterior_latent_sample_op = self._punet._q.sample()
+    self._posterior_sample_det_op = self._punet.reconstruct(z_q=self._posterior_latent_mu_op)
+    self._posterior_sample_op = self._punet.reconstruct(z_q=self._posterior_latent_sample_op)
+
+    # prior-based inference
+    self._prior_latent_mu_op = self._punet._p.mean()
+    self._prior_latent_stddev_op = self._punet._p.stddev()
+    self._prior_latent_sample_op = self._punet._p.sample()
+    self._prior_sample_det_op = self._punet.reconstruct(z_q=self._prior_latent_mu_op)
+    self._prior_sample_op = self._punet.reconstruct(z_q=self._prior_latent_sample_op)
+
+    self._sampled_logits_op = self._punet.sample()
+
     saver = tf.train.Saver(save_relative_paths=True)
     self._session = tf.train.MonitoredTrainingSession()
     print("Experiment dir:", experiment_dir)
@@ -48,45 +65,27 @@ class InferenceServer(object):
     print("Loading model from:", latest_ckpt_path)
     saver.restore(self._session, latest_ckpt_path)
 
+
   def inference(self, input_img, ref_img, use_posterior_net=False, deterministic=False, external_sample=None):
-    # output segmentation mask
-    # latent_space
-    # sample
-    input_img = input_img[np.newaxis]
-    print("input_img:", input_img.shape, input_img.dtype)
-    if use_posterior_net:
-      ref_img = ref_img[np.newaxis]
-      print("ref_img:", ref_img.shape, ref_img.dtype)
-
-    if use_posterior_net:
-      latent_mu_op = self._punet._q.mean()
-      latent_stddev_op = self._punet._q.stddev()
-      latent_sample_op = self._punet._q.sample()
-    else:
-      latent_mu_op = self._punet._p.mean()
-      latent_stddev_op = self._punet._p.stddev()
-      latent_sample_op = self._punet._p.sample()
-
-    if deterministic:
-      out_seg_op = self._punet.reconstruct(z_q=latent_mu_op)
-    else:
-      out_seg_op = self._punet.reconstruct(z_q=latent_sample_op)
-
     feed_dict = {
       self._x: input_img
     }
     if use_posterior_net:
       feed_dict[self._y] = ref_img
 
-    out_seg, latent_sample, latent_mu, latent_stddev = self._session.run([
-      out_seg_op, latent_sample_op, latent_mu_op, latent_stddev_op
-    ], feed_dict=feed_dict)
-    print("out_seg", out_seg.shape)
-    print("latent_sample", latent_sample)
-    print("latent_mu", latent_mu)
-    print("latent_stddev", latent_stddev)
-    return out_seg, latent_sample, latent_mu, latent_stddev
+    if use_posterior_net:
+      ops = [
+        self._posterior_sample_det_op if deterministic else self._posterior_sample_op,
+        self._posterior_latent_sample_op, self._posterior_latent_mu_op, self._posterior_latent_stddev_op
+      ]
+    else:
+      ops = [
+        self._prior_sample_det_op if deterministic else self._prior_sample_op,
+        self._prior_latent_sample_op, self._prior_latent_mu_op, self._prior_latent_stddev_op
+      ]
 
+    out_seg, latent_sample, latent_mu, latent_stddev = self._session.run(ops, feed_dict=feed_dict)
+    return out_seg, latent_sample, latent_mu, latent_stddev
 
 def run(argv):
   print("classification_server.py @ run(" + str(argv) + ")")
