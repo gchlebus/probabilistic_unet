@@ -53,10 +53,10 @@ class InferenceServer(object):
     # latent_space
     # sample
     input_img = input_img[np.newaxis]
-    ref_img = ref_img[np.newaxis]
-
     print("input_img:", input_img.shape, input_img.dtype)
-    print("ref_img:", ref_img.shape, ref_img.dtype)
+    if use_posterior_net:
+      ref_img = ref_img[np.newaxis]
+      print("ref_img:", ref_img.shape, ref_img.dtype)
 
     if use_posterior_net:
       latent_mu_op = self._punet._q.mean()
@@ -72,16 +72,20 @@ class InferenceServer(object):
     else:
       out_seg_op = self._punet.reconstruct(z_q=latent_sample_op)
 
+    feed_dict = {
+      self._x: input_img
+    }
+    if use_posterior_net:
+      feed_dict[self._y] = ref_img
+
     out_seg, latent_sample, latent_mu, latent_stddev = self._session.run([
       out_seg_op, latent_sample_op, latent_mu_op, latent_stddev_op
-    ], feed_dict={
-      self._x: input_img,
-      self._y: ref_img
-    })
+    ], feed_dict=feed_dict)
     print("out_seg", out_seg.shape)
     print("latent_sample", latent_sample)
     print("latent_mu", latent_mu)
     print("latent_stddev", latent_stddev)
+    return out_seg, latent_sample, latent_mu, latent_stddev
 
 
 def run(argv):
