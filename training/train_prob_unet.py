@@ -147,13 +147,12 @@ def train(cf):
         running_mean_val_rec_loss = 0.
         running_mean_val_kl = 0.
 
-        #FIXME predict batch_size patches at a time, not all at once. 
         for j in range(cf.validation['n_batches']):
           val_rec, val_sample, val_rec_loss, val_kl = \
             sess.run([reconstructed_logits, sampled_logits, rec_loss, kl],
                      feed_dict=
-                     {x: val_streams[cf.input_stream_name],
-                      y: val_streams[cf.labels_stream_name],
+                     {x: val_streams[cf.input_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
+                      y: val_streams[cf.labels_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
                       # mask: val_batch['loss_mask']
                       })
           running_mean_val_rec_loss += val_rec_loss / cf.validation['n_batches']
@@ -170,13 +169,14 @@ def train(cf):
 
             for _ in range(3):
               val_sample_ = sess.run(sampled_logits, feed_dict={
-                x: val_streams[cf.input_stream_name],
-                y: val_streams[cf.labels_stream_name]
+                x: val_streams[cf.input_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
+                y: val_streams[cf.labels_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
               })
               val_sample = np.concatenate([val_sample, val_sample_], axis=1)
 
             training_utils.plot_batch(
-              val_streams[cf.input_stream_name], val_streams[cf.labels_stream_name],
+              val_streams[cf.input_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
+              val_streams[cf.labels_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
               val_sample, num_classes=cf.num_classes, cmap=cf.color_map,
               out_dir=image_path)
 
