@@ -194,6 +194,7 @@ def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None
     seg_arr = ref_batch
 
     num_predictions = prediction.shape[1] // num_classes
+    #print("num_predictions", num_predictions)
     num_y_tiles = 2 + num_predictions
     batch_size = img_arr.shape[0]
 
@@ -210,7 +211,7 @@ def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None
         ax = plt.subplot(gs[0, tile])
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        plt.imshow(np.transpose(img_arr[tile, 0], axes=[0,1]))
+        plt.imshow(np.transpose(img_arr[tile, 0], axes=[0,1]), cmap="gray")
 
         # (here sampled) gt segmentation
         ax = plt.subplot(gs[1, tile])
@@ -220,6 +221,8 @@ def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None
             gt_seg = np.squeeze(seg_arr[tile], axis=0)
         else:
             gt_seg = np.argmax(seg_arr[tile], axis=0)
+        #print("gt_seg.shape", gt_seg.shape)
+        #print("gt minmax", gt_seg.min(), gt_seg.max())
         plt.imshow(to_rgb(gt_seg, cmap))
 
         # multiple predictions can be concatenated in channel axis, iterate all predictions
@@ -228,7 +231,12 @@ def plot_batch(img_batch, ref_batch, prediction, cmap, num_classes, out_dir=None
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
             single_prediction = prediction[tile][i * num_classes: (i+1) * num_classes]
+            #print("single_prediction.shape", single_prediction.shape)
+            #print("minmax=", single_prediction.min(), single_prediction.max())
             pred_seg = np.argmax(single_prediction, axis=0)
+            #print("pred_seg.shape", pred_seg.shape)
+            #print("pred minmax=", pred_seg.min(), pred_seg.max())
+            #plt.imshow(255*pred_seg, cmap="gray")
             plt.imshow(to_rgb(pred_seg, cmap))
     if out_dir is not None:
         plt.savefig(out_dir, dpi=200, bbox_inches='tight', pad_inches=0.0)
