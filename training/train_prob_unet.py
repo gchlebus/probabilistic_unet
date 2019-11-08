@@ -162,7 +162,8 @@ def train(cf):
             image_path = os.path.join(cf.exp_dir,
                                       'batch_{}_val_reconstructions.png'.format(i // cf.validation['every_n_batches']))
             training_utils.plot_batch(
-              val_streams[cf.input_stream_name], val_streams[cf.labels_stream_name],
+              val_streams[cf.input_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
+              val_streams[cf.labels_stream_name][j*cf.batch_size:(j+1)*cf.batch_size],
               val_rec, num_classes=cf.num_classes, cmap=cf.color_map, out_dir=image_path)
             image_path = os.path.join(cf.exp_dir,
                                       'batch_{}_val_samples.png'.format(i // cf.validation['every_n_batches']))
