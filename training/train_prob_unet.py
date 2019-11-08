@@ -192,7 +192,7 @@ def train(cf):
 
         if running_mean_val_rec_loss < best_val_rec_loss:
           best_val_rec_loss = running_mean_val_rec_loss
-          saver.save(sess._sess._sess._sess._sess, cf.exp_dir)
+          saver.save(sess._sess._sess._sess._sess, os.path.join(cf.exp_dir, "model"))
           print("Saving best model (val_rec_loss=%f)" % best_val_rec_loss)
 
         if cf.disable_progress_bar:
