@@ -78,8 +78,6 @@ class InferenceServer(object):
       self._x: input_img,
       self._y: ref_img
     })
-    out_seg = np.argmax(out_seg, axis=1)
-    out_seg.astype(np.uint8)
     print("out_seg", out_seg.shape)
     print("latent_sample", latent_sample)
     print("latent_mu", latent_mu)
