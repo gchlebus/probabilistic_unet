@@ -415,11 +415,12 @@ class ProbUNet(snt.AbstractModule):
         self._p = self._prior(img)
         self._unet_features = self._unet(img)
 
-    def reconstruct(self, use_posterior_mean=False, z_q=None):
+    def reconstruct(self, use_posterior_mean=False, z_q=None, softmax=False):
         """
         Reconstruct a given segmentation. Default settings result in decoding a posterior sample.
         :param use_posterior_mean: use posterior_mean instead of sampling z_q
         :param z_q: use provided latent sample z_q instead of sampling anew
+        :param softmax: return softmax output instead of logits.
         :return: 4D logits tensor
         """
         if use_posterior_mean:
@@ -427,7 +428,10 @@ class ProbUNet(snt.AbstractModule):
         else:
             if z_q is None:
                 z_q = self._q.sample()
-        return self._f_comb(self._unet_features, z_q)
+        ret = self._f_comb(self._unet_features, z_q)
+        if softmax:
+            ret = tf.nn.softmax(ret, axis=1)
+        return ret
 
     def sample(self):
         """
