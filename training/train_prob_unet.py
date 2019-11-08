@@ -112,7 +112,7 @@ def train(cf):
   shutil.copyfile(cf.config_path, os.path.join(cf.exp_dir, 'used_config.py'))
 
   #with tf.train.MonitoredTrainingSession(hooks=[saver_hook]) as sess:
-  with tf.Session() as sess:
+  with tf.train.MonitoredTrainingSession() as sess:
     summary_writer = tf.summary.FileWriter(cf.exp_dir, sess.graph)
     logging.info('Model: {}'.format(cf.exp_dir))
 
@@ -192,7 +192,7 @@ def train(cf):
 
         if running_mean_val_rec_loss < best_val_rec_loss:
           best_val_rec_loss = running_mean_val_rec_loss
-          saver.save(sess, cf.exp_dir)
+          saver.save(sess._sess._sess._sess._sess, cf.exp_dir)
           print("Saving best model (val_rec_loss=%f)" % best_val_rec_loss)
 
         if cf.disable_progress_bar:
