@@ -112,7 +112,7 @@ def train(cf):
   shutil.copyfile(cf.config_path, os.path.join(cf.exp_dir, 'used_config.py'))
 
   #with tf.train.MonitoredTrainingSession(hooks=[saver_hook]) as sess:
-  with tf.train.MonitoredTrainingSession() as sess:
+  with tf.Session() as sess:
     summary_writer = tf.summary.FileWriter(cf.exp_dir, sess.graph)
     logging.info('Model: {}'.format(cf.exp_dir))
 
