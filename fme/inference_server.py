@@ -47,19 +47,19 @@ class InferenceServer(object):
     self._posterior_latent_mu_op = self._punet._q.mean()
     self._posterior_latent_stddev_op = self._punet._q.stddev()
     self._posterior_latent_sample_op = self._punet._q.sample()
-    self._posterior_sample_det_op = self._punet.reconstruct(z_q=self._posterior_latent_mu_op)
-    self._posterior_sample_op = self._punet.reconstruct(z_q=self._posterior_latent_sample_op)
+    self._posterior_sample_det_op = self._punet.reconstruct(z_q=self._posterior_latent_mu_op, softmax=True)
+    self._posterior_sample_op = self._punet.reconstruct(z_q=self._posterior_latent_sample_op, softmax=True)
     self._posterior_external_sample_op = self._punet.reconstruct(
-      z_q=self._posterior_latent_mu_op + self._sigma_multiplier * self._posterior_latent_stddev_op)
+      z_q=self._posterior_latent_mu_op + self._sigma_multiplier * self._posterior_latent_stddev_op, softmax=True)
 
     # prior-based inference
     self._prior_latent_mu_op = self._punet._p.mean()
     self._prior_latent_stddev_op = self._punet._p.stddev()
     self._prior_latent_sample_op = self._punet._p.sample()
-    self._prior_sample_det_op = self._punet.reconstruct(z_q=self._prior_latent_mu_op)
-    self._prior_sample_op = self._punet.reconstruct(z_q=self._prior_latent_sample_op)
+    self._prior_sample_det_op = self._punet.reconstruct(z_q=self._prior_latent_mu_op, softmax=True)
+    self._prior_sample_op = self._punet.reconstruct(z_q=self._prior_latent_sample_op, softmax=True)
     self._prior_external_sample_op = self._punet.reconstruct(
-      z_q=self._prior_latent_mu_op + self._sigma_multiplier * self._prior_latent_stddev_op)
+      z_q=self._prior_latent_mu_op + self._sigma_multiplier * self._prior_latent_stddev_op, softmax=True)
 
     self._sampled_logits_op = self._punet.sample()
 
