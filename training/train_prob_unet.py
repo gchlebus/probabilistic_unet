@@ -106,13 +106,13 @@ def train(cf):
   # Add ops to save and restore all the variables.
   saver_hook = tf.train.CheckpointSaverHook(checkpoint_dir=cf.exp_dir, save_steps=cf.save_every_n_steps,
                                             saver=tf.train.Saver(save_relative_paths=True))
-  saver = tf.train.Saver(save_relative_paths=True)
-  best_val_rec_loss = 9999999
+  #saver = tf.train.Saver(save_relative_paths=True)
+  #best_val_rec_loss = 9999999
   # save config
   shutil.copyfile(cf.config_path, os.path.join(cf.exp_dir, 'used_config.py'))
 
-  #with tf.train.MonitoredTrainingSession(hooks=[saver_hook]) as sess:
-  with tf.train.MonitoredTrainingSession() as sess:
+  with tf.train.MonitoredTrainingSession(hooks=[saver_hook]) as sess:
+  #with tf.train.MonitoredTrainingSession() as sess:
     summary_writer = tf.summary.FileWriter(cf.exp_dir, sess.graph)
     logging.info('Model: {}'.format(cf.exp_dir))
 
@@ -190,10 +190,10 @@ def train(cf):
                                                                  mean_val_kl: running_mean_val_kl})
         summary_writer.add_summary(val_summary, i)
 
-        if running_mean_val_rec_loss < best_val_rec_loss:
-          best_val_rec_loss = running_mean_val_rec_loss
-          saver.save(sess._sess._sess._sess._sess, os.path.join(cf.exp_dir, "model"))
-          print("Saving best model (val_rec_loss=%f)" % best_val_rec_loss)
+        #if running_mean_val_rec_loss < best_val_rec_loss:
+        #  best_val_rec_loss = running_mean_val_rec_loss
+        #  saver.save(sess._sess._sess._sess._sess, os.path.join(cf.exp_dir, "model"))
+        #  print("Saving best model (val_rec_loss=%f)" % best_val_rec_loss)
 
         if cf.disable_progress_bar:
           logging.info('Evaluating epoch {}/{}: validation loss={}, kl={}' \
