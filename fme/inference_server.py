@@ -39,6 +39,7 @@ class InferenceServer(object):
                                          'b': tf.contrib.layers.l2_regularizer(1.0)})
     self._x = tf.placeholder(tf.float32, shape=cf.network_input_shape)
     self._y = tf.placeholder(tf.uint8, shape=cf.label_shape)
+    self._sigma_multiplier = tf.placeholder(tf.float32, shape=(6,))
     # is_training=True to get posterior_net as well
     self._punet(self._x, self._y, is_training=True, one_hot_labels=cf.one_hot_labels)
 
@@ -48,6 +49,8 @@ class InferenceServer(object):
     self._posterior_latent_sample_op = self._punet._q.sample()
     self._posterior_sample_det_op = self._punet.reconstruct(z_q=self._posterior_latent_mu_op)
     self._posterior_sample_op = self._punet.reconstruct(z_q=self._posterior_latent_sample_op)
+    self._posterior_external_sample_op = self._punet.reconstruct(
+      z_q=self._posterior_latent_mu_op + self._sigma_multiplier * self._posterior_latent_stddev_op)
 
     # prior-based inference
     self._prior_latent_mu_op = self._punet._p.mean()
@@ -55,6 +58,8 @@ class InferenceServer(object):
     self._prior_latent_sample_op = self._punet._p.sample()
     self._prior_sample_det_op = self._punet.reconstruct(z_q=self._prior_latent_mu_op)
     self._prior_sample_op = self._punet.reconstruct(z_q=self._prior_latent_sample_op)
+    self._prior_external_sample_op = self._punet.reconstruct(
+      z_q=self._prior_latent_mu_op + self._sigma_multiplier * self._prior_latent_stddev_op)
 
     self._sampled_logits_op = self._punet.sample()
 
@@ -66,23 +71,32 @@ class InferenceServer(object):
     saver.restore(self._session, latest_ckpt_path)
 
 
-  def inference(self, input_img, ref_img, use_posterior_net=False, deterministic=False, external_sample=None):
+  def inference(self, input_img, ref_img, use_posterior_net=False, deterministic=False, sigma_multiplier=None):
     feed_dict = {
       self._x: input_img
     }
     if use_posterior_net:
       feed_dict[self._y] = ref_img
+    if deterministic and sigma_multiplier is not None:
+      feed_dict[self._sigma_multiplier] = sigma_multiplier
 
     if use_posterior_net:
-      ops = [
-        self._posterior_sample_det_op if deterministic else self._posterior_sample_op,
-        self._posterior_latent_sample_op, self._posterior_latent_mu_op, self._posterior_latent_stddev_op
-      ]
+      if deterministic and sigma_multiplier is not None:
+        ops = [self._posterior_external_sample_op]
+      elif deterministic:
+        ops = [self._posterior_sample_det_op]
+      else:
+        ops = [self._posterior_sample_op]
+
+      ops.extend([self._posterior_latent_sample_op, self._posterior_latent_mu_op, self._posterior_latent_stddev_op])
     else:
-      ops = [
-        self._prior_sample_det_op if deterministic else self._prior_sample_op,
-        self._prior_latent_sample_op, self._prior_latent_mu_op, self._prior_latent_stddev_op
-      ]
+      if deterministic and sigma_multiplier is not None:
+        ops = [self._prior_external_sample_op]
+      elif deterministic:
+        ops = [self._prior_sample_det_op]
+      else:
+        ops = [self._prior_sample_op]
+      ops.extend([self._prior_latent_sample_op, self._prior_latent_mu_op, self._prior_latent_stddev_op])
 
     out_seg, latent_sample, latent_mu, latent_stddev = self._session.run(ops, feed_dict=feed_dict)
     return out_seg, latent_sample, latent_mu, latent_stddev
